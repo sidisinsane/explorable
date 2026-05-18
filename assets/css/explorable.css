@@ -1,0 +1,211 @@
+/*---
+title: Explorable Update Animation
+section: Animations
+---
+
+Keyframe animation that briefly flashes an element to the highlight color before
+fading back to its inherited color. Applied to `<output>` elements when their
+value changes to provide visual feedback.
+
+```example:html
+<output class="is-updated">42</output>
+```
+
+*/
+@keyframes explorable-update {
+  0% {
+    color: var(--color-highlight, orangered);
+  }
+  100% {
+    color: inherit;
+  }
+}
+
+/*---
+title: Explorable Label
+section: Components
+---
+
+Base label for explorable interactive controls. Uses inline-flex layout, disables
+text selection to support scrub interactions, and prevents hyphenation. Modifier
+classes control cursor and visibility states:
+
+- `.is-scrubbing` / `.is-focused` — switches to horizontal resize cursor and
+  highlights text in the brand color.
+- `.is-frozen` — disables interaction and removes underline affordances.
+- `.has-color` — renders a thick underline in the custom `--color` property.
+
+When focused on non-numeric inputs, the label becomes visually hidden to reduce
+clutter while remaining accessible.
+
+```example:html
+<label class="has-color" style="--color: #c8391a;">Temperature</label>
+```
+
+*/
+label {
+  display: inline-flex;
+  position: relative;
+  cursor: pointer;
+  hyphens: none;
+  /* Prevent text selection during scrub */
+  user-select: none;
+  -webkit-user-select: none;
+  text-wrap: stable;
+  overflow-wrap: normal;
+}
+
+/* Scrubbing or keyboard-focused: signal horizontal drag affordance */
+label.is-scrubbing,
+label.is-focused {
+  cursor: ew-resize;
+  color: var(--color-highlight);
+}
+
+label.is-frozen {
+  cursor: not-allowed;
+  border-bottom: none;
+}
+
+label.has-color {
+  text-decoration-line: underline;
+  text-decoration-style: solid;
+  text-decoration-color: var(--color, currentColor);
+  text-decoration-thickness: 0.25em;
+}
+
+label.is-focused:not(:has(+ input[type="number"], + input[type="range"])) {
+  position: absolute;
+  margin: -1px;
+  padding: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  border: 0;
+  white-space: nowrap;
+}
+
+/*---
+title: Explorable Hover Reveal
+section: Components
+---
+
+Hover and reveal interactions for explorable labels paired with enabled inputs or
+selects. When hovering, the label shifts to the highlight color and displays a
+tooltip pseudo-element indicating the interaction mode: `"click"` for text inputs
+and `"drag"` for numeric or range inputs. The `.is-revealing` class on an ancestor
+can force these hover styles without actual pointer contact.
+
+```example:html
+<label>Radius</label>
+<input type="number" value="10">
+```
+
+*/
+label:has(
+    + input:not([disabled], [type="file"]),
+    + select:not([disabled], [type="file"])
+  ):hover,
+.is-revealing
+  label:has(
+    + input:not([disabled], [type="file"]),
+    + select:not([disabled], [type="file"])
+  ) {
+  color: var(--color-highlight, orangered);
+}
+
+label::before {
+  position: absolute;
+  top: -0.725em;
+  left: 50%;
+  transform: translateX(-50%);
+  content: "";
+  font-size: var(--font-size-xs);
+  text-transform: lowercase;
+}
+
+label:has(
+    + input:not([disabled], [type="file"]),
+    + select:not([disabled], [type="file"])
+  ):hover::before {
+  opacity: 0.8;
+  content: "click";
+  color: currentColor;
+}
+
+label:has(
+    + input[type="number"]:not([disabled]),
+    + input[type="range"]:not([disabled])
+  ):hover::before {
+  content: "drag";
+}
+
+/*---
+title: Explorable Input
+section: Components
+---
+
+Minimal inline input styling for explorable parameters. Removes default borders
+in favor of a dotted underline that switches to solid on focus. Background is
+fully transparent so the input blends into surrounding text. Suppresses native
+WebKit spin buttons on number inputs for a cleaner appearance.
+
+```example:html
+<label>Angle</label>
+<input type="number" value="45">
+```
+
+*/
+input:not([type="range"]) {
+  vertical-align: baseline;
+  margin: 0;
+  outline: none;
+  border: none;
+  border-block-end: 1px dotted currentColor;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  field-sizing: content;
+  /* Suppress native spin buttons */
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+input:not([type="range"]):focus {
+  border-block-end-style: solid;
+}
+
+input:not([type="range"])::-webkit-outer-spin-button,
+input:not([type="range"])::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/*---
+title: Explorable Output
+section: Components
+---
+
+Result display for explorable computations. The `.is-updated` class triggers a
+brief highlight animation when the value changes. Outputs with a `data-is`
+attribute remain hidden until they also carry the `.is-active` class, enabling
+conditional result visibility.
+
+```example:html
+<output class="is-updated">Result: 128</output>
+<output data-is="premium" class="is-active">Premium feature enabled</output>
+```
+
+*/
+output.is-updated {
+  animation: explorable-update 600ms ease-out forwards;
+}
+
+/* conditional outputs — hide unmatched */
+output[data-is]:not(.is-active) {
+  display: none;
+}

@@ -1,0 +1,92 @@
+/*---
+title: Explorable Demo
+section: Components
+---
+
+Container for interactive explorable demonstrations. Provides vertical spacing
+from preceding content and styles conditional `<output>` elements as surfaced
+notification blocks with a left accent border. Inactive outputs appear muted;
+the `.is-active` class brings them to full opacity.
+
+```example:html
+<div class="explorable-demo">
+  <label>Width</label>
+  <input type="number" value="100">
+  <output data-condition="wide" class="is-active">Wide layout active</output>
+  <output data-condition="narrow">Narrow layout active</output>
+</div>
+```
+
+*/
+.explorable-demo {
+  margin-block-start: calc(6 * var(--spacing-unit));
+}
+
+.explorable-demo output[data-condition] {
+  display: block;
+  opacity: 0.5;
+  margin: var(--spacing-unit) 0;
+  border-inline-start: var(--spacing-unit) solid var(--color-highlight);
+  background-color: var(--color-bg-surface);
+  padding: var(--spacing-unit);
+  max-width: var(--max-content-width);
+  color: currentColor;
+}
+
+.explorable-demo output[data-condition].is-active {
+  opacity: 1;
+}
+
+/*---
+title: Explorable Properties List
+section: Components
+---
+
+A compact read-only key–value display for explorable parameter summaries.
+Uses a flex column layout where each row wraps naturally and is separated by
+a thin border. Terms are fixed-width and bold; definitions fill the remaining
+space.
+
+```example:html
+<dl class="explorable-properties-list">
+  <div class="explorable-properties-list__inner">
+    <dt class="explorable-properties-list__dt">Width</dt>
+    <dd class="explorable-properties-list__dd">120px</dd>
+  </div>
+  <div class="explorable-properties-list__inner">
+    <dt class="explorable-properties-list__dt">Height</dt>
+    <dd class="explorable-properties-list__dd">80px</dd>
+  </div>
+</dl>
+```
+
+*/
+.explorable-properties-list {
+  display: flex;
+  flex-direction: column;
+  width: max-content;
+  max-width: var(--max-content-width);
+}
+
+.explorable-properties-list__inner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 1ch;
+}
+
+.explorable-properties-list__inner:not(:only-child, :last-child) {
+  border-block-end: 1px solid currentColor;
+}
+
+.explorable-properties-list__dt,
+.explorable-properties-list__dd {
+  margin: 0;
+  line-height: var(--line-height-loose);
+}
+
+.explorable-properties-list__dt {
+  flex: 0 0 9ch;
+  font-weight: 600;
+}

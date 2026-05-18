@@ -1,0 +1,23 @@
+/*---
+title: Theme Import
+section: Base CSS
+---
+
+Primary design-system entry point. Loads the foundational theme layer
+including CSS custom properties, resets, base typography, layout primitives,
+form elements, and utility classes.
+
+*/
+@import "theme.css";
+
+/*---
+title: Explorable Import
+section: Base CSS
+---
+
+Loads interactive explorable component styles. Provides animations, inline
+control labels, minimal inputs, and conditional output behaviors for
+interactive demonstrations.
+
+*/
+@import "explorable.css";

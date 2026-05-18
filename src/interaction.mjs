@@ -1,0 +1,472 @@
+// @ts-check
+
+/**
+ * Interaction — label/input interaction layer.
+ *
+ * Handles the visible/hidden label toggle, scrub interaction (pointer + touch),
+ * click-to-edit, and keyboard handling for all input types within
+ * `[data-explorable]` containers.
+ *
+ * Consumes store, registry, and formatter utilities from core/base.
+ * Has no knowledge of the engine — neither depends on the other.
+ *
+ * @module interaction
+ */
+//
+// ── Interaction ────────────────────────────────────────────────────────────
+//
+// Canonical source. Edit this file.
+// global/interaction.js is generated from this file by build.sh — do not edit it.
+
+import { store, registry, _inputHandlers, _visuals, getFormatter, isFormatted, getParentLang } from "./core/base.mjs";
+
+// ── Constants ──────────────────────────────────────────────────────────────
+
+/**
+ * How many pixels of horizontal movement equal one step.
+ * @type {number}
+ */
+const SCRUB_PX_PER_STEP = 4;
+
+/**
+ * Minimum pixel movement before an interaction is treated as a scrub.
+ * @type {number}
+ */
+const SCRUB_THRESHOLD = 4;
+
+// ── Shared interaction utilities ───────────────────────────────────────────
+
+/**
+ * Clamps a value between min and max.
+ * @param {number} value
+ * @param {number} min
+ * @param {number} max
+ * @returns {number}
+ */
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+/**
+ * Returns the step value of an input, defaulting to 1.
+ * @param {HTMLInputElement} input
+ * @returns {number}
+ */
+function stepOf(input) {
+  const s = parseFloat(input.step);
+  return Number.isFinite(s) && s > 0 ? s : 1;
+}
+
+/**
+ * Returns the min value of an input, defaulting to -Infinity.
+ * @param {HTMLInputElement} input
+ * @returns {number}
+ */
+function minOf(input) {
+  const n = parseFloat(input.min);
+  return Number.isFinite(n) ? n : -Infinity;
+}
+
+/**
+ * Returns the max value of an input, defaulting to Infinity.
+ * @param {HTMLInputElement} input
+ * @returns {number}
+ */
+function maxOf(input) {
+  const n = parseFloat(input.max);
+  return Number.isFinite(n) ? n : Infinity;
+}
+
+/**
+ * Returns the input's current value as a plain display string.
+ * Used for unformatted inputs only.
+ * @param {HTMLInputElement} input
+ * @returns {string}
+ */
+function formatRawValue(input) {
+  const n = parseFloat(input.value);
+  return Number.isFinite(n) ? String(n) : input.value;
+}
+
+// ── Scrub ──────────────────────────────────────────────────────────────────
+
+/**
+ * Attaches pointer and touch scrub behaviour to a label/input pair.
+ * Sets label._didScrub() which returns true if the last interaction
+ * was a scrub, allowing click handlers to bail out.
+ * @param {HTMLLabelElement} label
+ * @param {HTMLInputElement} input
+ * @returns {void}
+ */
+function attachScrub(label, input) {
+  let startX       = 0;
+  let accumulatedX = 0;
+  let isScrubbing  = false;
+  let didScrub     = false;
+
+  // ── Pointer ──────────────────────────────────────────────────────────────
+
+  /** @param {PointerEvent} e */
+  function onPointerMove(e) {
+    const dx = e.clientX - startX;
+    if (!isScrubbing && Math.abs(dx) >= SCRUB_THRESHOLD) {
+      isScrubbing = true;
+      label.classList.add("is-scrubbing");
+    }
+    if (!isScrubbing) return;
+
+    didScrub = true;
+    const steps = Math.round((dx - accumulatedX) / SCRUB_PX_PER_STEP);
+
+    if (steps !== 0) {
+      accumulatedX += steps * SCRUB_PX_PER_STEP;
+      const next = clamp(
+        (input.valueAsNumber || 0) + steps * stepOf(input),
+        minOf(input),
+        maxOf(input)
+      );
+      if (next !== input.valueAsNumber) {
+        input.value = String(next);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    }
+  }
+
+  function onPointerUp() {
+    document.removeEventListener("pointermove", onPointerMove);
+    document.removeEventListener("pointerup",   onPointerUp);
+    label.classList.remove("is-scrubbing");
+    isScrubbing  = false;
+    accumulatedX = 0;
+    if (didScrub) input.blur();
+  }
+
+  /** @param {PointerEvent} e */
+  label.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+
+    startX       = e.clientX;
+    accumulatedX = 0;
+    isScrubbing  = false;
+    didScrub     = false;
+
+    label.setPointerCapture(e.pointerId);
+    document.addEventListener("pointermove", onPointerMove);
+    document.addEventListener("pointerup",   onPointerUp);
+  });
+
+  // ── Touch ─────────────────────────────────────────────────────────────────
+
+  let touchStartX    = 0;
+  let touchAccX      = 0;
+  let touchScrubbing = false;
+
+  label.addEventListener("touchstart", (e) => {
+    touchStartX    = e.touches[0].clientX;
+    touchAccX      = 0;
+    touchScrubbing = false;
+  }, { passive: true });
+
+  label.addEventListener("touchmove", (e) => {
+    const dx = e.touches[0].clientX - touchStartX;
+
+    if (!touchScrubbing && Math.abs(dx) >= SCRUB_THRESHOLD) {
+      touchScrubbing = true;
+      label.classList.add("is-scrubbing");
+    }
+    if (!touchScrubbing) return;
+
+    e.preventDefault();
+
+    const steps = Math.round((dx - touchAccX) / SCRUB_PX_PER_STEP);
+
+    if (steps !== 0) {
+      touchAccX += steps * SCRUB_PX_PER_STEP;
+      const next = clamp(
+        (input.valueAsNumber || 0) + steps * stepOf(input),
+        minOf(input),
+        maxOf(input)
+      );
+      if (next !== input.valueAsNumber) {
+        input.value = String(next);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    }
+  }, { passive: false });
+
+  label.addEventListener("touchend", () => {
+    label.classList.remove("is-scrubbing");
+    if (touchScrubbing) input.blur();
+    touchScrubbing = false;
+  });
+
+  /** @type {any} */ (label)._didScrub = () => didScrub;
+}
+
+// ── Built-in input handlers ────────────────────────────────────────────────
+//
+// Registered at initInteraction time. Plugins registered before
+// initInteraction can override by registering handlers with more specific
+// match functions — first match wins.
+
+/**
+ * Registers the built-in input handlers for all supported input types.
+ * @returns {void}
+ */
+function registerBuiltInHandlers() {
+
+  // ── number ──────────────────────────────────────────────────────────────
+
+  registry.registerInputHandler({
+    match: input => input.type === "number",
+    present(label, input) {
+      const formatted = isFormatted(input);
+      input.classList.add("is-visually-hidden");
+      if (!formatted) label.textContent = formatRawValue(input);
+      input.addEventListener("input", () => {
+        if (!formatted) label.textContent = formatRawValue(input);
+      });
+    },
+    attach(label, input) {
+      attachScrub(label, input);
+
+      label.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (/** @type {any} */ (label)._didScrub?.()) return;
+        label.classList.add("is-editing");
+        input.classList.remove("is-visually-hidden");
+        input.focus();
+      });
+
+      const dismiss = () => {
+        input.classList.add("is-visually-hidden");
+        label.classList.remove("is-editing");
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      };
+
+      input.addEventListener("blur",    dismiss);
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === "Escape") input.blur();
+      });
+      input.addEventListener("focus", () => label.classList.add("is-focused"));
+      input.addEventListener("blur",  () => label.classList.remove("is-focused"));
+    },
+  });
+
+  // ── range ────────────────────────────────────────────────────────────────
+
+  registry.registerInputHandler({
+    match: input => input.type === "range",
+    present(label, input) {
+      input.classList.add("is-visually-hidden");
+      const formatted = isFormatted(input);
+      if (!formatted) label.textContent = formatRawValue(input);
+      input.addEventListener("input", () => {
+        if (!formatted) label.textContent = formatRawValue(input);
+      });
+    },
+    attach(label, input) {
+      attachScrub(label, input);
+      input.addEventListener("focus", () => label.classList.add("is-focused"));
+      input.addEventListener("blur",  () => label.classList.remove("is-focused"));
+      label.addEventListener("click", (e) => {
+        e.preventDefault();
+        input.focus();
+      });
+    },
+  });
+
+  // ── select ───────────────────────────────────────────────────────────────
+
+  registry.registerInputHandler({
+    match: input => input.tagName === "SELECT",
+    present(label, input) {
+      const sel = /** @type {HTMLSelectElement} */ (/** @type {unknown} */ (input));
+      sel.classList.add("is-visually-hidden");
+      if (!isFormatted(sel)) label.textContent = sel.options[sel.selectedIndex]?.text ?? sel.value;
+    },
+    attach(label, input) {
+      const sel = /** @type {HTMLSelectElement} */ (/** @type {unknown} */ (input));
+      sel.addEventListener("change", () => {
+        if (!isFormatted(sel)) label.textContent = sel.options[sel.selectedIndex]?.text ?? sel.value;
+        sel.classList.add("is-visually-hidden");
+        sel.blur();
+      });
+      sel.addEventListener("blur",  () => sel.classList.add("is-visually-hidden"));
+      sel.addEventListener("focus", () => label.classList.add("is-focused"));
+      sel.addEventListener("blur",  () => label.classList.remove("is-focused"));
+      label.addEventListener("click", (e) => {
+        e.preventDefault();
+        sel.classList.remove("is-visually-hidden");
+        sel.focus();
+        try { sel.showPicker(); } catch { /* not supported in all browsers */ }
+      });
+    },
+  });
+
+  // ── date ─────────────────────────────────────────────────────────────────
+
+  registry.registerInputHandler({
+    match: input => input.type === "date",
+    present(label, input) {
+      input.classList.add("is-visually-hidden");
+      const formatted = isFormatted(input);
+      if (!formatted) label.textContent = input.value;
+    },
+    attach(label, input) {
+      input.addEventListener("input", () => {
+        const formatted = isFormatted(input);
+        if (!formatted) label.textContent = input.value;
+        input.classList.add("is-visually-hidden");
+        input.blur();
+      });
+      input.addEventListener("focus", () => label.classList.add("is-focused"));
+      input.addEventListener("blur",  () => {
+        label.classList.remove("is-focused");
+        input.classList.add("is-visually-hidden");
+      });
+      label.addEventListener("click", (e) => {
+        e.preventDefault();
+        input.classList.remove("is-visually-hidden");
+        input.focus();
+        try { input.showPicker(); } catch { /* not supported in all browsers */ }
+      });
+    },
+  });
+
+  // ── color ─────────────────────────────────────────────────────────────────
+
+  registry.registerInputHandler({
+    match: input => input.type === "color",
+    present(label, input) {
+      input.classList.add("is-visually-hidden");
+      label.textContent = input.value;
+    },
+    attach(label, input) {
+      input.addEventListener("input", () => {
+        label.textContent = input.value;
+        input.blur();
+      });
+      input.addEventListener("focus", () => label.classList.add("is-focused"));
+      input.addEventListener("blur",  () => label.classList.remove("is-focused"));
+      label.addEventListener("click", (e) => {
+        e.preventDefault();
+        input.click();
+      });
+    },
+  });
+
+  // ── text ──────────────────────────────────────────────────────────────────
+
+  registry.registerInputHandler({
+    match: input => input.type === "text",
+    present(label, input) {
+      input.classList.add("is-visually-hidden");
+      label.textContent = input.value;
+      input.addEventListener("input", () => {
+        label.textContent = input.value;
+      });
+    },
+    attach(label, input) {
+      label.addEventListener("click", (e) => {
+        e.preventDefault();
+        label.classList.add("is-editing");
+        input.classList.remove("is-visually-hidden");
+        input.focus();
+      });
+      const dismiss = () => {
+        input.classList.add("is-visually-hidden");
+        label.classList.remove("is-editing");
+      };
+      input.addEventListener("blur",    dismiss);
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === "Escape") input.blur();
+      });
+      input.addEventListener("focus", () => label.classList.add("is-focused"));
+      input.addEventListener("blur",  () => label.classList.remove("is-focused"));
+    },
+  });
+}
+
+// ── Input wiring ───────────────────────────────────────────────────────────
+
+/**
+ * Wires up a single input — finds its label, matches a handler,
+ * and wires up formatted label text and visuals if applicable.
+ *
+ * Hidden inputs are skipped — they have no label and no interaction.
+ * `present` always runs. `attach` only runs when the input is not frozen.
+ * Disabled inputs receive `is-frozen` on their label.
+ *
+ * @param {HTMLInputElement | HTMLSelectElement} el
+ * @returns {void}
+ */
+function initInput(el) {
+  // Hidden inputs are constants — no label, no interaction needed
+  if (el instanceof HTMLInputElement && el.type === "hidden") return;
+
+  const label = /** @type {HTMLLabelElement|null} */ (
+    document.querySelector(`label[for="${el.id}"]`)
+  );
+
+  const handler = _inputHandlers.find(h =>
+    h.match(/** @type {HTMLInputElement} */ (el))
+  );
+
+  if (handler && label) {
+    handler.present(label, /** @type {HTMLInputElement} */ (el));
+    if (el.disabled) {
+      label.classList.add("is-frozen");
+    } else {
+      handler.attach(label, /** @type {HTMLInputElement} */ (el));
+    }
+  }
+
+  // Wire up formatted label text regardless of frozen state.
+  const match = getFormatter(el);
+  if (match && label) {
+    const { formatter, value: fmtValue } = match;
+    const format = () => {
+      label.textContent = formatter.format(
+        store.get(el.id),
+        fmtValue,
+        getParentLang(el)
+      );
+    };
+    format();
+    store.subscribe(el.id, format);
+  }
+
+  // Wire up visuals onto the label.
+  if (!label) return;
+  for (const visual of _visuals) {
+    if (!el.hasAttribute(visual.attribute)) continue;
+    const attrValue = el.getAttribute(visual.attribute) ?? "";
+    const render = () => visual.render(
+      /** @type {HTMLLabelElement} */ (label),
+      store.get(el.id),
+      attrValue
+    );
+    render();
+    store.subscribe(el.id, render);
+  }
+}
+
+// ── Public init ────────────────────────────────────────────────────────────
+
+/**
+ * Initialises the interaction layer: registers built-in input handlers
+ * and wires up all inputs within `[data-explorable]` containers.
+ * Call after initEngine so the store is already populated.
+ * @returns {void}
+ */
+function initInteraction() {
+  registerBuiltInHandlers();
+
+  document.querySelectorAll("[data-explorable] input, [data-explorable] select").forEach(el => {
+    initInput(/** @type {HTMLInputElement | HTMLSelectElement} */ (el));
+  });
+}
+
+export { initInteraction };

@@ -1,0 +1,113 @@
+// @ts-check
+
+/**
+ * Formatters plugin — localised number and date formatting.
+ *
+ * Registers formatters with the core registry via `data-format="type:value"`.
+ * Locale is derived from the nearest ancestor `lang` attribute.
+ *
+ * Adding a new format requires only a new `registry.registerFormatter`
+ * call here — no other files need changing.
+ *
+ * @module plugins/formatters
+ */
+//
+// ── Formatters plugin ──────────────────────────────────────────────────────
+//
+// Canonical source. Edit this file.
+// global/formatters.js is generated from this file by build.sh — do not edit it.
+
+import { registry, _formatters } from "../core/base.mjs"; // stripped in global build; registry and _formatters are globals there
+
+/**
+ * Initialises the formatters plugin by registering all formatters.
+ * @returns {void}
+ */
+function initFormatters() {
+  // data-format="currency:USD"
+  registry.registerFormatter({
+    type: "currency",
+    format: (value, configValue, lang) =>
+      /** @type {Intl.NumberFormatOptions} */
+      new Intl.NumberFormat(lang, {
+        style: "currency",
+        currency: configValue.toUpperCase(),
+        // @ts-ignore — roundingPriority is valid in modern browsers but missing from TS DOM lib
+        roundingPriority: "morePrecision",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }).format(Number(value)),
+  });
+
+  // data-format="number"
+  registry.registerFormatter({
+    type: "number",
+    format: (value, _configValue, lang) =>
+      /** @type {Intl.NumberFormatOptions} */
+      new Intl.NumberFormat(lang, {
+        // @ts-ignore — roundingPriority is valid in modern browsers but missing from TS DOM lib
+        roundingPriority: "morePrecision",
+        minimumFractionDigits: 0,
+      }).format(Number(value)),
+  });
+
+  // data-format="percentage"
+  registry.registerFormatter({
+    type: "percentage",
+    format: (value, _configValue, lang) =>
+      /** @type {Intl.NumberFormatOptions} */
+      new Intl.NumberFormat(lang, {
+        style: "percent",
+        // @ts-ignore — roundingPriority is valid in modern browsers but missing from TS DOM lib
+        roundingPriority: "morePrecision",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }).format(Number(value)),
+  });
+
+  // data-format="date" or data-format="date:year"
+  registry.registerFormatter({
+    type: "date",
+    format: (value, configValue, lang) => {
+      const [year, month, day] = String(value).split("-").map(Number);
+
+      /** @type {Intl.DateTimeFormatOptions} */
+      let opts = { dateStyle: "long" };
+      if (configValue === "year") {
+        opts = { year: "numeric" };
+      }
+
+      return new Intl.DateTimeFormat(lang, opts).format(
+        new Date(year, month - 1, day),
+      );
+    },
+  });
+}
+
+/**
+ * Applies registered formatters to static elements carrying both
+ * `data-value` and `data-format` within `[data-explorable]` containers.
+ *
+ * These elements are not reactive — formatting is applied once on load.
+ * The element's authored text content serves as the no-JS fallback;
+ * `data-value` provides the machine-readable raw value to format.
+ *
+ * Example:
+ *   <span data-value="1280" data-format="currency:USD">$1,280</span>
+ *
+ * @returns {void}
+ */
+function initStaticFormatting() {
+  document.querySelectorAll(
+    "[data-explorable] [data-value][data-format]:not(output):not(label)"
+  ).forEach(el => {
+    const raw              = el.getAttribute("data-value") ?? "";
+    const attr             = el.getAttribute("data-format") ?? "";
+    const [type, configValue = ""] = attr.split(":");
+    const lang             = el.closest("[lang]")?.getAttribute("lang") ?? "en";
+    const fmt              = _formatters.find(f => f.type === type);
+    if (fmt) el.textContent = fmt.format(raw, configValue, lang);
+  });
+}
+
+export { initFormatters, initStaticFormatting };

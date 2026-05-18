@@ -1,0 +1,61 @@
+// @ts-check
+
+/**
+ * Visuals plugin — visual representations of input values.
+ *
+ * Registers visuals with the core registry. Unlike formatters, visuals
+ * receive the label element directly and render by setting CSS custom
+ * properties or classes rather than returning a string.
+ *
+ * The label's appearance is entirely controlled by CSS — the visual only
+ * communicates state. Add styles for `label.has-color` and the
+ * `--color` custom property in your stylesheet to opt in.
+ *
+ * Adding a new visual requires only a new `registry.registerVisual`
+ * call here — no other files need changing.
+ *
+ * @module plugins/visuals
+ */
+//
+// ── Visuals plugin ─────────────────────────────────────────────────────────
+//
+// Canonical source. Edit this file.
+// global/visuals.js is generated from this file by build.sh — do not edit it.
+
+import { registry } from "../core/base.mjs"; // stripped in global build; registry is a global there
+
+/**
+ * Initialises the visuals plugin by registering visual renderers.
+ * @returns {void}
+ */
+function initVisuals() {
+
+  // ── Color ─────────────────────────────────────────────────────────────────
+  //
+  // Sets `--color` as a CSS custom property on the label and adds
+  // `has-color` so stylesheets can opt in to displaying a swatch.
+  //
+  // Example CSS:
+  //
+  //   label.has-color::before {
+  //     content: '';
+  //     display: inline-block;
+  //     width: 0.75em;
+  //     height: 0.75em;
+  //     border-radius: 50%;
+  //     background: var(--color);
+  //     margin-inline-end: 0.3em;
+  //     vertical-align: middle;
+  //   }
+
+  registry.registerVisual({
+    attribute: "data-color",
+    render(label, value) {
+      label.style.setProperty("--color", String(value));
+      label.classList.add("has-color");
+    },
+  });
+
+}
+
+export { initVisuals };

@@ -1,0 +1,690 @@
+/*---
+title: Design Tokens
+section: Base CSS
+---
+
+Defines the core CSS custom properties for the entire design system, including
+font families, fluid type scale, color palette, spacing rhythm, and layout
+constraints. All component styles reference these tokens.
+
+```example:html
+<p style="font-size: var(--font-size-xl); color: var(--color-brand);">
+  Large branded text using design tokens
+</p>
+```
+
+*/
+:root {
+  --font-sans:
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-serif: Merriweather, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+
+  --base-font-size: 16px;
+  --line-height-base: 1.5;
+  --line-height-tight: 1.25;
+  --line-height-loose: 1.75;
+  --letter-spacing-tight: -0.02em;
+
+  --font-size-xs: calc(var(--base-font-size) / 2);
+  --font-size-s: clamp(0.8rem, 0.75rem + 0.25vw, 0.875rem);
+  --font-size-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --font-size-m: clamp(1.1rem, 1rem + 0.5vw, 1.25rem);
+  --font-size-l: clamp(1.3rem, 1.1rem + 1vw, 1.5rem);
+  --font-size-xl: clamp(1.6rem, 1.3rem + 1.5vw, 2rem);
+  --font-size-2xl: clamp(2rem, 1.5rem + 2.5vw, 2.5rem);
+  --font-size-3xl: clamp(2.5rem, 1.8rem + 3.5vw, 3.5rem);
+  --font-size-4xl: clamp(3rem, 2.2rem + 4vw, 4.5rem);
+
+  --color-bg: #ece5d3;
+  --color-bg-tl: #ece5d3bf;
+  --color-bg-muted: #e7e5e1;
+  --color-bg-surface: #faf9f4;
+  
+  --color-fg: #14110d;
+  --color-fg-tl: #14110dbf;
+  --color-fg-muted: #121110;
+  --color-fg-surface: #050403;
+
+  --color-surface: #ffffff;
+  --color-surface-tl: #ffffffbf;
+
+  --color-brand: #c8391a;
+  --color-brand-tl: #c8391abf;
+  --color-brand-muted: #724e46;
+  
+  --color-highlight: #c8391a;
+  --color-highlight-tl: #c8391abf;
+  --color-highlight-muted: #724e46;
+  
+  --spacing-unit: calc(var(--base-font-size) / 2);
+  --gutter-x: clamp(3 * var(--spacing-unit), 4 * var(--spacing-unit) + 4vw, 9 * var(--spacing-unit));
+  --gutter-y: clamp(3 * var(--spacing-unit), 4 * var(--spacing-unit) + 4vw, 9 * var(--spacing-unit));
+  --max-width: 1200px;
+  --max-content-width: 65ch;
+  --border-radius: 2px;
+}
+
+/*---
+title: Dark Mode Theme
+section: Base CSS
+---
+
+Automatically switches the color palette to a dark theme when the user's
+operating system is set to prefer dark mode. Adjusts background, foreground,
+and surface colors while preserving the accent palette.
+
+*/
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #14110d;
+    --color-bg-tl: #14110dbf;
+    --color-bg-muted: #121110;
+    --color-bg-surface: #050403;
+
+    --color-fg: #ece5d3;
+    --color-fg-tl: #ece5d3bf;
+    --color-fg-muted: #e7e5e1;
+    --color-fg-surface: #faf9f4;
+  }
+}
+
+/*---
+title: Box Sizing Reset
+section: Base CSS
+---
+
+Applies `border-box` box-sizing globally to all elements and their pseudo-elements.
+This ensures padding and borders do not increase the total width or height of
+elements, simplifying layout calculations.
+
+*/
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/*---
+title: HTML Root
+section: Base CSS
+---
+
+Sets the base font size to the design token and enables smooth scrolling with
+offset padding to account for sticky navigation.
+
+*/
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(9 * var(--spacing-unit));
+  font-size: var(--base-font-size);
+}
+
+/*---
+title: Body
+section: Base CSS
+---
+
+Primary document body styling. Applies the warm neutral background, serif
+typography, comfortable reading metrics, and horizontal page gutters.
+
+*/
+body {
+  margin: 0;
+  background-color: var(--color-bg);
+  padding-inline: var(--gutter-x);
+  padding-block-start: var(--gutter-y);
+  padding-block-end: 0;
+  width: 100%;
+  color: var(--color-fg);
+  font-weight: 300;
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  font-family: var(--font-serif);
+  font-feature-settings:
+    "liga" 1,
+    "onum" 1;
+  text-wrap: pretty;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/*---
+title: Page Header
+section: Layout
+---
+
+Sticky header positioned at the top of the viewport. Uses a semi-transparent
+background to allow content to show through during scroll.
+
+*/
+body > header {
+  display: flex;
+  position: sticky;
+  top: 0;
+  margin-block: 0;
+  background-color: var(--color-bg-tl);
+}
+
+/*---
+title: Main Content
+section: Layout
+---
+
+Centered wrapper for the primary page content with a maximum width constraint
+and automatic horizontal margins.
+
+*/
+body > main {
+  margin: 0 auto;
+  margin-block-end: var(--gutter-y);
+  width: 100%;
+  max-width: var(--max-width);
+}
+
+/*---
+title: Page Footer
+section: Layout
+---
+
+Full-width footer with a top accent border and inverted colors. Contains no
+vertical page margins so it sits flush against the viewport edge.
+
+*/
+body > footer {
+  margin-block: 0;
+  border-block-start: 3px solid var(--color-highlight);
+  background-color: var(--color-fg);
+  padding-block: calc(3 * var(--spacing-unit));
+  color: var(--color-bg);
+}
+
+/*---
+title: Article Scroll Snap
+section: Layout
+---
+
+Enables scroll-snap alignment for articles with an ID, allowing them to snap
+to the start of the viewport during scroll-driven navigation.
+
+*/
+article[id] {
+  scroll-snap-align: start;
+}
+
+/*---
+title: Headings
+section: Typography
+---
+
+Six-level heading hierarchy with tight line-height, negative letter-spacing,
+and balanced text wrapping. Headings use a fluid type scale and are
+capitalized at levels 1–3. The `.branding` modifier on `h1` renders a smaller,
+logotype-sized heading.
+
+*/
+h1:not(.branding),
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-tight);
+  text-wrap: balance;
+}
+
+h1:not(.branding) {
+  font-size: var(--font-size-4xl);
+  text-transform: capitalize;
+}
+
+h1.branding {
+  font-size: var(--font-size-lg);
+}
+
+h2 {
+  font-size: var(--font-size-3xl);
+  text-transform: capitalize;
+}
+
+h3 {
+  font-size: var(--font-size-2xl);
+  text-transform: capitalize;
+}
+
+h4 {
+  font-size: var(--font-size-xl);
+}
+
+h5 {
+  font-size: var(--font-size-lg);
+}
+
+h6 {
+  font-size: var(--font-size-md);
+}
+
+/*---
+title: Paragraphs
+section: Typography
+---
+
+Body text paragraphs with automatic hyphenation, break-word overflow handling,
+and a comfortable maximum measure for readability.
+
+*/
+p {
+  margin-block-end: calc(3 * var(--spacing-unit));
+  max-width: var(--max-content-width);
+  hyphens: auto;
+  overflow-wrap: break-word;
+}
+
+
+/*---
+title: Lists
+section: Typography
+---
+
+Unordered lists with outside disc markers. Nested lists receive standard
+indentation while top-level lists are flush. Custom marker color matches the
+brand highlight.
+
+```example:html
+<ul>
+  <li>First item with a branded marker</li>
+  <li>Second item
+    <ul>
+      <li>Nested item (indented)</li>
+    </ul>
+  </li>
+</ul>
+```
+
+*/
+ul {
+  list-style-type: disc;
+  list-style-position: outside;
+}
+
+ul:not(ul ul) {
+  padding-inline-start: 0;
+}
+
+ul li::marker {
+  color: var(--color-highlight);
+}
+
+/*---
+title: Links
+section: Components
+---
+
+Standard text links with an underline offset and smooth color transition on
+hover and focus. The `.is-active` class disables interaction and highlights
+the current page link.
+
+```example:html
+<p>
+  <a href="#">A standard link</a>
+  <a href="#" class="is-active">Active page</a>
+</p>
+```
+
+*/
+a {
+  transition: color 0.2s ease;
+  color: currentColor;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+a:hover,
+a:focus {
+  color: var(--color-highlight);
+}
+
+a.is-active {
+  pointer-events: none;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/*---
+title: Branding Link
+section: Components
+---
+
+Special link style for branding or logotype anchors. Uses the brand color and
+removes the underline. Hover and focus states transition to a muted brand tone.
+
+```example:html
+<a href="#" class="branding__link">My Brand</a>
+```
+
+*/
+a.branding__link {
+  text-decoration: none;
+}
+
+a.branding__link {
+  color: var(--color-brand);
+}
+
+a.branding__link:hover,
+a.branding__link:focus {
+  color: var(--color-brand-muted);
+}
+
+/*---
+title: Abbreviations
+section: Components
+---
+
+Abbreviation elements with a contextual tooltip. Hovering over an `abbr` with
+a non-empty `title` attribute reveals the expanded text inline next to the
+element.
+
+```example:html
+<p>
+  The <abbr title="HyperText Markup Language">HTML</abbr> specification is
+  maintained by the W3C.
+</p>
+```
+
+*/
+abbr {
+  text-decoration: none;
+}
+
+abbr[title]:not([title=""]) {
+  position: relative;
+  cursor: help;
+}
+
+abbr[title]:not([title=""]):hover::after {
+  opacity: 0.75;
+  z-index: 10;
+  margin-inline-start: var(--spacing-unit);
+  pointer-events: none;
+  content: attr(title);
+  color: currentColor;
+  font-size: var(--font-size-s);
+  white-space: nowrap;
+}
+
+/*---
+title: Code Blocks
+section: Components
+---
+
+Preformatted code blocks with a light background, mono-spaced font, and an
+optional language label injected via the `data-lang` attribute on the `<pre>`
+element.
+
+```example:html
+<pre data-lang="css">
+  <code>
+    body {
+      background: var(--color-bg);
+    }
+  </code>
+</pre>
+```
+
+*/
+pre {
+  line-height: var(--line-height-loose);
+  font-family: var(--font-mono);
+}
+
+pre:has(code) {
+  background-color: #f0eee680;
+  padding: calc(2 * var(--spacing-unit));
+  padding-block-end: calc(3 * var(--spacing-unit));
+  color: #292929;
+  font-size: 0.8666rem;
+  white-space-collapse: collapse;
+}
+
+pre:has(code):before {
+  display: block;
+  margin-inline: calc(2 * var(--spacing-unit) * -1);
+  margin-block-start: calc(2 * var(--spacing-unit) * -1);
+  background-color: #292929;
+  padding-inline: calc(2 * var(--spacing-unit));
+  padding-block: calc(var(--spacing-unit) / 2);
+  content: attr(data-lang);
+  color: #f0eee6;
+  font-size: 0.8666em;
+  text-transform: uppercase;
+}
+
+code {
+  font-size: 0.8666em;
+  font-family: var(--font-mono);
+  text-transform: none;
+}
+
+pre code {
+  display: block;
+  padding: 0;
+  min-width: 100px;
+  max-width: 100%;
+  font-size: inherit;
+  white-space-collapse: preserve-breaks;
+  -webkit-overflow-scrolling: touch;
+  overflow-x: scroll;
+}
+
+/*---
+title: Tables
+section: Components
+---
+
+Basic table stylings.
+
+```example:html
+<table>
+  <caption>Sources</caption>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>File</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>module</td>
+      <td>src/types.js</td>
+    </tr>
+  </tbody>
+</table>
+```
+
+*/
+table {
+  display: table;
+  box-sizing: border-box;
+  border-collapse: collapse;
+  border-spacing: 2px;
+  max-width: 100%;
+  table-layout: fixed;
+  text-align: left;
+  text-indent: 0;
+}
+
+caption {
+  padding-block-end: var(--spacing-unit);
+  caption-side: top;
+  font-weight: 600;
+  text-align: left;
+}
+
+tr {
+  border-bottom: 1px solid currentColor;
+}
+
+th {
+  font-weight: 600;
+}
+
+th,
+td {
+  border: 1px solid currentColor;
+  padding-inline: calc(2 * var(--spacing-unit));
+  padding-block: calc(var(--spacing-unit) / 2);
+  max-width: 45vw;
+  overflow: hidden;
+  line-height: var(--line-height-tight);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*---
+title: Buttons & File Inputs
+section: Components
+---
+
+Styled interactive controls for actions and file selection. Buttons and file
+input labels share a consistent inline-flex appearance with semi-transparent
+surfaces and smooth state transitions. File input labels include a centered
+upload icon and use the brand color for emphasis. Hover and focus states
+darken borders; file labels additionally shift to a solid brand background.
+
+```example:html
+<button type="button">Primary Action</button>
+<button type="reset">Reset</button>
+<label for="file-input">Upload File</label>
+<input type="file" id="file-input" class="is-visually-hidden">
+```
+
+*/
+button,
+label:has(+ input[type="file"]) {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-unit);
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
+  cursor: pointer;
+  border: 1px solid var(--color-fg-tl);
+  border-radius: var(--border-radius);
+  background-color: var(--color-surface-tl);
+  padding: var(--spacing-unit) calc(2 * var(--spacing-unit));
+  color: var(--color-fg);
+  font-size: inherit;
+  line-height: 1;
+  font-family: inherit;
+}
+
+label:has(+ input[type="file"]) {
+  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'><rect width='256' height='256' fill='none'/><line x1='128' y1='144' x2='128' y2='32' fill='none' stroke='currentColor' stroke-linecap='round' stroke-linejoin='round' stroke-width='24'/><polyline points='216 144 216 208 40 208 40 144' fill='none' stroke='currentColor' stroke-linecap='round' stroke-linejoin='round' stroke-width='24'/><polyline points='88 72 128 32 168 72' fill='none' stroke='currentColor' stroke-linecap='round' stroke-linejoin='round' stroke-width='24'/></svg>");
+  background-position: 1em center;
+  background-size: 1em;
+  background-repeat: no-repeat;
+  background-color: var(--color-highlight-tl);
+  padding-inline-start: 2.125em;
+}
+
+button:hover,
+button:focus,
+label:has(+ input[type="file"]):hover,
+label:has(+ input[type="file"]):focus {
+  border-color: var(--color-fg);
+}
+
+label:has(+ input[type="file"]):hover,
+label:has(+ input[type="file"]):focus {
+  background-color: var(--color-highlight);
+}
+
+button[type="reset"]:hover,
+button[type="reset"]:focus {
+  background-color: var(--color-surface);
+}
+
+/*---
+title: Form Layout
+section: Forms
+---
+
+Horizontally aligns form controls with a consistent gap between elements using
+flexbox.
+
+```example:html
+<form>
+  <input type="text" placeholder="Enter your name">
+  <button type="submit">Submit</button>
+</form>
+```
+
+*/
+form {
+  display: flex;
+  gap: var(--spacing-unit);
+}
+
+/*---
+title: Visually Hidden
+section: Utilities
+---
+
+Hides an element visually while keeping it accessible to assistive technologies
+like screen readers. Use this class on elements that should not be visible but
+must remain in the accessibility tree.
+
+```example:html
+<p class="is-visually-hidden">This text is only for screen readers.</p>
+```
+
+*/
+.is-visually-hidden {
+  position: absolute;
+  margin: -1px;
+  padding: 0;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  border: 0;
+  white-space: nowrap;
+}
+
+/*---
+title: Full Bleed
+section: Utilities
+---
+
+Breaks a child element out of its parent's horizontal bounds to span the full
+viewport width while keeping its inner content centered and capped at the
+design system's maximum width.
+
+```example:html
+<section class="full-bleed">
+  <div class="full-bleed__inner">
+    <p>Content that stretches edge-to-edge with centered inner layout.</p>
+  </div>
+</section>
+```
+
+*/
+.full-bleed {
+  margin-inline: calc(-1 * var(--gutter-x));
+  padding-inline: var(--gutter-x);
+  width: 100vw;
+}
+
+.full-bleed__inner {
+  margin: 0 auto;
+  width: 100%;
+  max-width: var(--max-width);
+}
